@@ -1,6 +1,41 @@
 import { useEffect, useState } from "react"
+import { PlusIcon } from "lucide-react"
 import { api } from "../api"
 import { useAuth } from "../context/AuthContext"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Field, FieldGroup, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+const STATUS_ITEMS = [
+  { value: null, label: "All" },
+  { value: "true", label: "Active" },
+  { value: "false", label: "Inactive" },
+]
 
 export default function Trucks() {
   const { me } = useAuth()
@@ -76,6 +111,11 @@ export default function Trucks() {
     ? [editing.usual_driver, ...drivers]
     : drivers
 
+  const driverItems = [
+    { value: null, label: "— None —" },
+    ...driverOptions.map((d) => ({ value: String(d.id), label: d.full_name })),
+  ]
+
   const driverChanging =
     editing && formDriver && Number(formDriver) !== editing.usual_driver_id
 
@@ -124,134 +164,204 @@ export default function Trucks() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-slate-800">Trucks</h1>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold">Trucks</h1>
         {isAdmin && (
-          <button onClick={openCreate} className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">
-            + Add Truck
-          </button>
+          <Button onClick={openCreate}>
+            <PlusIcon data-icon="inline-start" />
+            Add Truck
+          </Button>
         )}
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">{error}</div>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="mb-4 flex items-center gap-3">
-        <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }} className="border border-slate-300 rounded-md px-3 py-1.5 text-sm">
-          <option value="">All</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
+      <div className="mb-4 flex items-center gap-2">
+        <Select
+          items={STATUS_ITEMS}
+          value={filter || null}
+          onValueChange={(v) => { setFilter(v ?? ""); setPage(1) }}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {STATUS_ITEMS.map((it) => (
+                <SelectItem key={it.value ?? "all"} value={it.value}>
+                  {it.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Plate</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Capacity (kg)</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Usual Driver</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Status</th>
-              {isAdmin && <th className="text-right px-4 py-3 font-medium text-slate-600">Actions</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Plate</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Capacity (kg)</TableHead>
+              <TableHead>Usual Driver</TableHead>
+              <TableHead>Status</TableHead>
+              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
             ) : trucks.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No trucks found</td></tr>
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  No trucks found
+                </TableCell>
+              </TableRow>
             ) : trucks.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-800">{t.plate_number}</td>
-                <td className="px-4 py-3 text-slate-800">{t.display_name}</td>
-                <td className="px-4 py-3 text-slate-800">{t.capacity_kg}</td>
-                <td className="px-4 py-3 text-slate-800">{t.usual_driver ? t.usual_driver.full_name : "—"}</td>
-                <td className="px-4 py-3">
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+              <TableRow key={t.id}>
+                <TableCell>{t.plate_number}</TableCell>
+                <TableCell>{t.display_name}</TableCell>
+                <TableCell>{t.capacity_kg}</TableCell>
+                <TableCell>{t.usual_driver ? t.usual_driver.full_name : "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={t.is_active ? "default" : "secondary"}>
                     {t.is_active ? "Active" : "Inactive"}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
                 {isAdmin && (
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <button onClick={() => openEdit(t)} className="text-slate-600 hover:text-slate-900 text-sm">Edit</button>
-                    <button onClick={() => handleToggleActive(t)} className="text-slate-600 hover:text-slate-900 text-sm">
-                      {t.is_active ? "Deactivate" : "Activate"}
-                    </button>
-                    <button onClick={() => handleDelete(t)} className="text-red-500 hover:text-red-700 text-sm">Delete</button>
-                  </td>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
+                        Edit
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleToggleActive(t)}>
+                        {t.is_active ? "Deactivate" : "Activate"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => handleDelete(t)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
                 )}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center gap-2 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-md border border-slate-300 disabled:opacity-40 hover:bg-slate-50">Prev</button>
-          <span className="text-slate-600">Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-md border border-slate-300 disabled:opacity-40 hover:bg-slate-50">Next</button>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            Prev
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </Button>
         </div>
       )}
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4 text-slate-800">{editing ? "Edit Truck" : "Add Truck"}</h2>
-            <form onSubmit={handleSubmit}>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Plate Number</label>
-              <input
-                type="text"
-                value={formPlate}
-                onChange={(e) => setFormPlate(e.target.value)}
-                autoFocus
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
-              <label className="block text-sm font-medium text-slate-600 mb-1">Display Name</label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
-              <label className="block text-sm font-medium text-slate-600 mb-1">Capacity (kg)</label>
-              <input
-                type="number"
-                step="1"
-                min="1"
-                value={formCapacity}
-                onChange={(e) => setFormCapacity(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
-              <label className="block text-sm font-medium text-slate-600 mb-1">Usual Driver</label>
-              <select
-                value={formDriver}
-                onChange={(e) => setFormDriver(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-2"
-              >
-                <option value="">— None —</option>
-                {driverOptions.map((d) => (
-                  <option key={d.id} value={d.id}>{d.full_name}</option>
-                ))}
-              </select>
-              {!editing && (
-                <p className="text-xs text-slate-400 mb-2">New trucks are created active and require a usual driver.</p>
-              )}
-              {driverChanging && (
-                <p className="text-xs text-amber-600 mb-2">
-                  Reassigning the usual driver: if the selected driver already drives another truck,
-                  the API will return an error describing how to resolve the former truck.
-                </p>
-              )}
-              {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit Truck" : "Add Truck"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="truck-plate">Plate Number</FieldLabel>
+                <Input
+                  id="truck-plate"
+                  type="text"
+                  value={formPlate}
+                  onChange={(e) => setFormPlate(e.target.value)}
+                  autoFocus
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="truck-name">Display Name</FieldLabel>
+                <Input
+                  id="truck-name"
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="truck-capacity">Capacity (kg)</FieldLabel>
+                <Input
+                  id="truck-capacity"
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={formCapacity}
+                  onChange={(e) => setFormCapacity(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="truck-driver">Usual Driver</FieldLabel>
+                <Select
+                  items={driverItems}
+                  value={formDriver || null}
+                  onValueChange={(v) => setFormDriver(v ?? "")}
+                >
+                  <SelectTrigger id="truck-driver" className="w-full">
+                    <SelectValue placeholder="— None —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {driverItems.map((it) => (
+                        <SelectItem key={it.value ?? "none"} value={it.value}>
+                          {it.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {!editing && (
+                  <FieldDescription>
+                    New trucks are created active and require a usual driver.
+                  </FieldDescription>
+                )}
+                {driverChanging && (
+                  <FieldDescription>
+                    Reassigning the usual driver: if the selected driver already drives another truck,
+                    the API will return an error describing how to resolve the former truck.
+                  </FieldDescription>
+                )}
+                {error && <FieldError>{error}</FieldError>}
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
