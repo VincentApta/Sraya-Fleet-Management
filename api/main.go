@@ -80,6 +80,8 @@ func main() {
 	trips.Get("/active", listActiveTrips(db))
 	trips.Get("/:id", getTrip(db))
 	trips.Post("/", createTrip(db))
+	trips.Post("/:id/return", returnTrip(db))
+	trips.Put("/:id", updateTrip(db))
 
 	// Users — every endpoint is Administrator-only (group-level RequireRole).
 	users := app.Group("/api/users", RequireAuth(), RequireRole(RoleAdministrator))
