@@ -28,3 +28,13 @@ type Driver struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// PickupSite represents a pickup location for trips.
+type PickupSite struct {
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	SiteName   string    `gorm:"not null" json:"site_name"`
+	DistanceKm float64   `gorm:"not null" json:"distance_km"`
+	IsActive   bool      `gorm:"not null;default:true" json:"is_active"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}

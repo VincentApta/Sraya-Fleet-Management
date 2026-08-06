@@ -22,6 +22,7 @@ export default function Layout({ children }) {
             <nav className="flex items-center gap-4 text-sm">
               <Link to="/" className="text-slate-600 hover:text-slate-900">Dashboard</Link>
               <Link to="/drivers" className="text-slate-600 hover:text-slate-900">Drivers</Link>
+              <Link to="/pickup-sites" className="text-slate-600 hover:text-slate-900">Pickup Sites</Link>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">

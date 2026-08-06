@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import Drivers from "./pages/Drivers"
+import PickupSites from "./pages/PickupSites"
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")).render(
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/drivers" element={<Drivers />} />
+            <Route path="/pickup-sites" element={<PickupSites />} />
           </Route>
           <Route path="*" element={<Login />} />
         </Routes>

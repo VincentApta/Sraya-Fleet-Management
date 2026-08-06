@@ -26,7 +26,7 @@ func main() {
 	}
 	log.Println("connected to database")
 
-	if err := db.AutoMigrate(&User{}, &Driver{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Driver{}, &PickupSite{}); err != nil {
 		log.Fatalf("auto-migrate failed: %v", err)
 	}
 	seedAdmin(db)
@@ -51,6 +51,14 @@ func main() {
 	drivers.Post("/", RequireRole(RoleAdministrator), createDriver(db))
 	drivers.Put("/:id", RequireRole(RoleAdministrator), updateDriver(db))
 	drivers.Delete("/:id", RequireRole(RoleAdministrator), deleteDriver(db))
+
+	// Pickup sites — all endpoints require auth; write ops are admin-only.
+	sites := app.Group("/api/pickup-sites", RequireAuth())
+	sites.Get("/", listPickupSites(db))
+	sites.Get("/:id", getPickupSite(db))
+	sites.Post("/", RequireRole(RoleAdministrator), createPickupSite(db))
+	sites.Put("/:id", RequireRole(RoleAdministrator), updatePickupSite(db))
+	sites.Delete("/:id", RequireRole(RoleAdministrator), deletePickupSite(db))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		sqlDB, err := db.DB()
