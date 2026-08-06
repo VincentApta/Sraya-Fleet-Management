@@ -1,12 +1,167 @@
-import { Link, useNavigate } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import {
+  ChevronsUpDown,
+  History,
+  IdCard,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  Route,
+  Truck,
+  Users,
+} from "lucide-react"
 
-// App shell: header with the current user and a logout button, then the page
-// content passed as children.
+import { useAuth } from "../context/AuthContext"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar"
+
+const NAV = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Trips", url: "/trips", icon: Route },
+  { title: "Drivers", url: "/drivers", icon: IdCard },
+  { title: "Pickup Sites", url: "/pickup-sites", icon: MapPin },
+  { title: "Trucks", url: "/trucks", icon: Truck },
+  { title: "History", url: "/history", icon: History },
+]
+
+function isActivePath(pathname, url) {
+  if (url === "/") return pathname === "/"
+  return pathname === url || pathname.startsWith(url + "/")
+}
+
+// Collapsible sidebar (icon mode on desktop, Sheet on mobile). Kept as an inner
+// component so it can reach setOpenMobile via useSidebar to close the mobile
+// Sheet after navigation.
+function AppSidebar({ me, onLogout }) {
+  const { setOpenMobile } = useSidebar()
+  const location = useLocation()
+  const isAdmin = me?.role === "Administrator"
+  const items = isAdmin
+    ? [...NAV, { title: "Users", url: "/users", icon: Users }]
+    : NAV
+  const closeOnNav = () => setOpenMobile(false)
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              size="lg"
+              tooltip="Sraya Fleet Management"
+              render={<Link to="/" onClick={closeOnNav} />}
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Truck />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">Sraya Fleet</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  Management
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    isActive={isActivePath(location.pathname, item.url)}
+                    tooltip={item.title}
+                    render={<Link to={item.url} onClick={closeOnNav} />}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton
+                    size="lg"
+                    className="aria-expanded:bg-sidebar-accent"
+                  >
+                    <Avatar>
+                      <AvatarFallback>
+                        {(me?.username ?? "?").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">{me?.username}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {me?.role}
+                      </span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto" />
+                  </SidebarMenuButton>
+                }
+              />
+              <DropdownMenuContent
+                className="w-(--anchor-width)"
+                side="top"
+                align="end"
+              >
+                <DropdownMenuLabel>
+                  {me?.username} · {me?.role}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onClick={onLogout}>
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
+
+// App shell: a sidebar (collapsible on desktop, Sheet on mobile) plus a header
+// with the sidebar trigger and the page content passed as children.
 export default function Layout({ children }) {
   const { me, logout } = useAuth()
   const navigate = useNavigate()
-  const isAdmin = me?.role === "Administrator"
 
   async function handleLogout() {
     await logout()
@@ -14,35 +169,15 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <span className="font-semibold text-slate-800">Sraya Fleet Management</span>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link to="/" className="text-slate-600 hover:text-slate-900">Dashboard</Link>
-              <Link to="/drivers" className="text-slate-600 hover:text-slate-900">Drivers</Link>
-              <Link to="/pickup-sites" className="text-slate-600 hover:text-slate-900">Pickup Sites</Link>
-              <Link to="/trucks" className="text-slate-600 hover:text-slate-900">Trucks</Link>
-              <Link to="/trips" className="text-slate-600 hover:text-slate-900">Trips</Link>
-              <Link to="/history" className="text-slate-600 hover:text-slate-900">History</Link>
-              {isAdmin && <Link to="/users" className="text-slate-600 hover:text-slate-900">Users</Link>}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-slate-600">
-              {me?.username} <span className="text-slate-400">· {me?.role}</span>
-            </span>
-            <button
-              onClick={handleLogout}
-              className="px-3 py-1.5 rounded-md bg-slate-800 text-white hover:bg-slate-700"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-      <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
-    </div>
+    <SidebarProvider>
+      <AppSidebar me={me} onLogout={handleLogout} />
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-2 border-b px-4">
+          <SidebarTrigger />
+          <span className="font-semibold">Sraya Fleet Management</span>
+        </header>
+        <div className="flex-1 p-4 md:p-6">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
