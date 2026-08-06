@@ -1,17 +1,39 @@
 import { useEffect, useState } from "react"
 import { api } from "../api"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
-// Tailwind classes for the load_status badge: green at capacity, blue under, red over.
-function loadStatusClass(status) {
+// Badge variant for a load_status value: red over, muted under, plain at capacity.
+function loadStatusVariant(status) {
   switch (status) {
-    case "At capacity":
-      return "bg-green-50 text-green-700"
-    case "Underweight":
-      return "bg-blue-50 text-blue-700"
     case "Overweight":
-      return "bg-red-50 text-red-700"
+      return "destructive"
+    case "Underweight":
+      return "secondary"
+    case "At capacity":
+      return "default"
     default:
-      return "bg-slate-50 text-slate-600"
+      return "outline"
   }
 }
 
@@ -129,103 +151,133 @@ export default function History() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-slate-800">Trip History</h1>
-        <button onClick={exportCsv} className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">
-          Export CSV
-        </button>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold">Trip History</h1>
+        <Button onClick={exportCsv}>Export CSV</Button>
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">{error}</div>}
+      {error && (
+        <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+      )}
 
-      <form onSubmit={applyFilters} className="mb-4 bg-white border border-slate-200 rounded-lg p-3 flex flex-wrap items-end gap-3">
-        <label className="text-sm">
-          <span className="block text-slate-600 mb-1">Return from</span>
-          <input type="date" value={fStart} onChange={(e) => setFStart(e.target.value)} className="border border-slate-300 rounded-md px-2 py-1.5 text-sm" />
-        </label>
-        <label className="text-sm">
-          <span className="block text-slate-600 mb-1">Return to</span>
-          <input type="date" value={fEnd} onChange={(e) => setFEnd(e.target.value)} className="border border-slate-300 rounded-md px-2 py-1.5 text-sm" />
-        </label>
-        <label className="text-sm">
-          <span className="block text-slate-600 mb-1">Truck</span>
-          <select value={fTruck} onChange={(e) => setFTruck(e.target.value)} className="border border-slate-300 rounded-md px-2 py-1.5 text-sm">
-            <option value="">All</option>
-            {trucks.map((t) => <option key={t.id} value={t.id}>{t.plate_number}</option>)}
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="block text-slate-600 mb-1">Driver</span>
-          <select value={fDriver} onChange={(e) => setFDriver(e.target.value)} className="border border-slate-300 rounded-md px-2 py-1.5 text-sm">
-            <option value="">All</option>
-            {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="block text-slate-600 mb-1">Site</span>
-          <select value={fSite} onChange={(e) => setFSite(e.target.value)} className="border border-slate-300 rounded-md px-2 py-1.5 text-sm">
-            <option value="">All</option>
-            {sites.map((s) => <option key={s.id} value={s.id}>{s.site_name}</option>)}
-          </select>
-        </label>
-        <label className="text-sm flex-1 min-w-[12rem]">
-          <span className="block text-slate-600 mb-1">Search</span>
-          <input type="text" value={fQ} onChange={(e) => setFQ(e.target.value)} placeholder="Plate, driver, or site" className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm" />
-        </label>
-        <button type="submit" className="px-4 py-1.5 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">Search</button>
-        <button type="button" onClick={clearFilters} className="px-4 py-1.5 rounded-md border border-slate-300 text-slate-600 text-sm hover:bg-slate-50">Clear</button>
-      </form>
+      <Card className="mb-4">
+        <CardContent>
+          <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="f-start">Return from</Label>
+              <Input id="f-start" type="date" value={fStart} onChange={(e) => setFStart(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="f-end">Return to</Label>
+              <Input id="f-end" type="date" value={fEnd} onChange={(e) => setFEnd(e.target.value)} />
+            </div>
+            <FilterSelect label="Truck" id="f-truck" value={fTruck} onChange={setFTruck}>
+              <SelectItem value={null}>All</SelectItem>
+              {trucks.map((t) => (
+                <SelectItem key={t.id} value={String(t.id)}>{t.plate_number}</SelectItem>
+              ))}
+            </FilterSelect>
+            <FilterSelect label="Driver" id="f-driver" value={fDriver} onChange={setFDriver}>
+              <SelectItem value={null}>All</SelectItem>
+              {drivers.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>{d.full_name}</SelectItem>
+              ))}
+            </FilterSelect>
+            <FilterSelect label="Site" id="f-site" value={fSite} onChange={setFSite}>
+              <SelectItem value={null}>All</SelectItem>
+              {sites.map((s) => (
+                <SelectItem key={s.id} value={String(s.id)}>{s.site_name}</SelectItem>
+              ))}
+            </FilterSelect>
+            <div className="flex min-w-[12rem] flex-1 flex-col gap-1.5">
+              <Label htmlFor="f-q">Search</Label>
+              <Input id="f-q" type="text" value={fQ} onChange={(e) => setFQ(e.target.value)} placeholder="Plate, driver, or site" />
+            </div>
+            <Button type="submit">Search</Button>
+            <Button type="button" variant="outline" onClick={clearFilters}>Clear</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
               <SortHeader col="return_time" label="Returned" onSort={toggleSort} indicator={sortIndicator} />
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Truck</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Driver</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Site</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Dispatched</th>
+              <TableHead>Truck</TableHead>
+              <TableHead>Driver</TableHead>
+              <TableHead>Site</TableHead>
+              <TableHead>Dispatched</TableHead>
               <SortHeader col="trip_money_idr" label="Trip Money (IDR)" align="right" onSort={toggleSort} indicator={sortIndicator} />
               <SortHeader col="factory_net_kg" label="Factory Net (kg)" align="right" onSort={toggleSort} indicator={sortIndicator} />
               <SortHeader col="weight_difference_kg" label="Diff (kg)" align="right" onSort={toggleSort} indicator={sortIndicator} />
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Load Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+              <TableHead>Load Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
             ) : trips.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">No completed trips</td></tr>
+              <TableRow>
+                <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                  No completed trips
+                </TableCell>
+              </TableRow>
             ) : trips.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-600">{t.return_time ? new Date(t.return_time).toLocaleString() : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.truck ? t.truck.plate_number : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.driver ? t.driver.full_name : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.pickup_site ? t.pickup_site.site_name : "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{new Date(t.dispatch_time).toLocaleString()}</td>
-                <td className="px-4 py-3 text-right text-slate-800">{Number(t.trip_money_idr).toLocaleString("id-ID")}</td>
-                <td className="px-4 py-3 text-right text-slate-800">{t.factory_net_kg ?? "—"}</td>
-                <td className="px-4 py-3 text-right text-slate-800">{t.weight_difference_kg ?? "—"}</td>
-                <td className="px-4 py-3">
+              <TableRow key={t.id}>
+                <TableCell className="text-muted-foreground">{t.return_time ? new Date(t.return_time).toLocaleString() : "—"}</TableCell>
+                <TableCell>{t.truck ? t.truck.plate_number : "—"}</TableCell>
+                <TableCell>{t.driver ? t.driver.full_name : "—"}</TableCell>
+                <TableCell>{t.pickup_site ? t.pickup_site.site_name : "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{new Date(t.dispatch_time).toLocaleString()}</TableCell>
+                <TableCell className="text-right">{Number(t.trip_money_idr).toLocaleString("id-ID")}</TableCell>
+                <TableCell className="text-right">{t.factory_net_kg ?? "—"}</TableCell>
+                <TableCell className="text-right">{t.weight_difference_kg ?? "—"}</TableCell>
+                <TableCell>
                   {t.load_status ? (
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${loadStatusClass(t.load_status)}`}>
-                      {t.load_status}
-                    </span>
+                    <Badge variant={loadStatusVariant(t.load_status)}>{t.load_status}</Badge>
                   ) : "—"}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center gap-2 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-md border border-slate-300 disabled:opacity-40 hover:bg-slate-50">Prev</button>
-          <span className="text-slate-600">Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-md border border-slate-300 disabled:opacity-40 hover:bg-slate-50">Next</button>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            Prev
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+            Next
+          </Button>
         </div>
       )}
+    </div>
+  )
+}
+
+// Labeled Select wrapper for the filter form. `null` value is the "All" option.
+function FilterSelect({ label, id, value, onChange, children }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={value || null} onValueChange={(v) => onChange(v ?? "")}>
+        <SelectTrigger id={id} className="w-40">
+          <SelectValue placeholder="All" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>{children}</SelectGroup>
+        </SelectContent>
+      </Select>
     </div>
   )
 }
@@ -234,11 +286,13 @@ export default function History() {
 // otherwise a plain static header. `indicator(col)` returns " ▲"/" ▼"/"".
 function SortHeader({ col, label, align = "left", onSort, indicator }) {
   const sortable = SORTABLE.includes(col)
-  const cls = `px-4 py-3 font-medium text-slate-600 ${align === "right" ? "text-right" : "text-left"} ${sortable ? "cursor-pointer select-none hover:text-slate-900" : ""}`
-  if (!sortable) return <th className={cls}>{label}</th>
+  const className = cn(align === "right" && "text-right")
+  if (!sortable) return <TableHead className={className}>{label}</TableHead>
   return (
-    <th className={cls} onClick={() => onSort(col)}>
-      {label}{indicator(col)}
-    </th>
+    <TableHead className={className}>
+      <Button variant="ghost" size="sm" onClick={() => onSort(col)}>
+        {label}{indicator(col)}
+      </Button>
+    </TableHead>
   )
 }
