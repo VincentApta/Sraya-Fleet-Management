@@ -9,6 +9,8 @@ import Dashboard from "./pages/Dashboard"
 import Drivers from "./pages/Drivers"
 import PickupSites from "./pages/PickupSites"
 import Trucks from "./pages/Trucks"
+import Trips from "./pages/Trips"
+import Users from "./pages/Users"
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -21,6 +23,8 @@ createRoot(document.getElementById("root")).render(
             <Route path="/drivers" element={<Drivers />} />
             <Route path="/pickup-sites" element={<PickupSites />} />
             <Route path="/trucks" element={<Trucks />} />
+            <Route path="/trips" element={<Trips />} />
+            <Route path="/users" element={<Users />} />
           </Route>
           <Route path="*" element={<Login />} />
         </Routes>

@@ -24,6 +24,8 @@ export default function Layout({ children }) {
               <Link to="/drivers" className="text-slate-600 hover:text-slate-900">Drivers</Link>
               <Link to="/pickup-sites" className="text-slate-600 hover:text-slate-900">Pickup Sites</Link>
               <Link to="/trucks" className="text-slate-600 hover:text-slate-900">Trucks</Link>
+              <Link to="/trips" className="text-slate-600 hover:text-slate-900">Trips</Link>
+              {isAdmin && <Link to="/users" className="text-slate-600 hover:text-slate-900">Users</Link>}
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
