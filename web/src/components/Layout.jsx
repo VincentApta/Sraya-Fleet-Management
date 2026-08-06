@@ -6,12 +6,15 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
+  Moon,
   Route,
+  Sun,
   Truck,
   Users,
 } from "lucide-react"
 
 import { useAuth } from "../context/AuthContext"
+import { useTheme } from "../context/ThemeContext"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -57,6 +60,7 @@ function isActivePath(pathname, url) {
 // Sheet after navigation.
 function AppSidebar({ me, onLogout }) {
   const { setOpenMobile } = useSidebar()
+  const { theme, toggleTheme } = useTheme()
   const location = useLocation()
   const isAdmin = me?.role === "Administrator"
   const items = isAdmin
@@ -112,6 +116,12 @@ function AppSidebar({ me, onLogout }) {
 
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Toggle theme" onClick={toggleTheme}>
+              {theme === "dark" ? <Sun /> : <Moon />}
+              <span>Toggle theme</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger

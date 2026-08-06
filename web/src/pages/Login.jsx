@@ -1,6 +1,18 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
+import { CircleAlert } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function Login() {
   const { me, login } = useAuth()
@@ -28,48 +40,50 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-        <h1 className="text-xl font-semibold text-slate-800 text-center">
-          Sraya Fleet Management
-        </h1>
-        <p className="text-center text-sm text-slate-500 mt-1">Sign in to your account</p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Sraya Fleet Management</CardTitle>
+          <CardDescription>Sign in to your account</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Username</label>
-            <input
-              type="text"
-              autoComplete="username"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-800"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-800"
-            />
-          </div>
+            {error && (
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-md bg-slate-800 text-white py-2 font-medium hover:bg-slate-700 disabled:opacity-60"
-          >
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-      </div>
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

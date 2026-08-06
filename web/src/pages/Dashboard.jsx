@@ -1,6 +1,35 @@
 import { useEffect, useState } from "react"
+import { CircleAlert } from "lucide-react"
 import { api } from "../api"
 import { useAuth } from "../context/AuthContext"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 // "YYYY-MM-DD" for today, in the user's local timezone.
 function todayStr() {
@@ -32,20 +61,20 @@ function formatElapsed(seconds) {
 function BarChart({ data, labelKey, valueKey, unit }) {
   const max = Math.max(1, ...data.map((d) => Number(d[valueKey]) || 0))
   if (data.length === 0) {
-    return <p className="text-sm text-slate-400 py-8 text-center">No data in range</p>
+    return <p className="py-8 text-center text-sm text-muted-foreground">No data in range</p>
   }
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {data.map((d, i) => {
         const v = Number(d[valueKey]) || 0
         const pct = (v / max) * 100
         return (
           <div key={i} className="flex items-center gap-3">
-            <div className="w-28 text-xs text-slate-500 shrink-0 truncate">{d[labelKey]}</div>
-            <div className="flex-1 bg-slate-100 rounded h-5 overflow-hidden">
-              <div className="h-full bg-slate-700 rounded" style={{ width: `${pct}%` }} />
+            <div className="w-28 shrink-0 truncate text-xs text-muted-foreground">{d[labelKey]}</div>
+            <div className="h-5 flex-1 overflow-hidden rounded bg-muted">
+              <div className="h-full rounded bg-primary" style={{ width: `${pct}%` }} />
             </div>
-            <div className="w-28 text-xs text-slate-700 text-right">
+            <div className="w-28 text-right text-xs text-foreground">
               {Number(v).toLocaleString("id-ID")}{unit}
             </div>
           </div>
@@ -57,11 +86,17 @@ function BarChart({ data, labelKey, valueKey, unit }) {
 
 function KpiCard({ label, value, hint }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
-      <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</div>
-      <div className="mt-1 text-2xl font-semibold text-slate-800">{value}</div>
-      {hint && <div className="text-xs text-slate-400 mt-1">{hint}</div>}
-    </div>
+    <Card>
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="text-2xl">{value}</CardTitle>
+      </CardHeader>
+      {hint && (
+        <CardContent>
+          <p className="text-xs text-muted-foreground">{hint}</p>
+        </CardContent>
+      )}
+    </Card>
   )
 }
 
@@ -148,11 +183,11 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-800 mb-4">
-        Dashboard <span className="text-slate-400 font-normal">· {me?.role}</span>
+      <h1 className="mb-4 text-xl font-semibold text-foreground">
+        Dashboard <span className="font-normal text-muted-foreground">· {me?.role}</span>
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard label="Active Trips" value={stats.active_trip_count} hint="Dispatched" />
         <KpiCard label="Trucks Out" value={stats.trucks_out} hint="On dispatched trips" />
         <KpiCard
@@ -162,149 +197,131 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden mb-6">
-        <div className="px-4 py-3 border-b border-slate-200">
-          <h2 className="text-sm font-semibold text-slate-700">Active Trips</h2>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Truck</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Driver</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Pickup Site</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Dispatched</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Elapsed</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loadingTrips ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
-            ) : trips.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No active trips</td></tr>
-            ) : trips.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-800">{t.truck ? t.truck.plate_number : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.driver ? t.driver.full_name : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.pickup_site ? t.pickup_site.site_name : "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{new Date(t.dispatch_time).toLocaleString()}</td>
-                <td className="px-4 py-3 text-slate-600">{formatElapsed(t.elapsed_seconds)}</td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => openReturn(t)}
-                    className="px-3 py-1 rounded-md bg-slate-700 text-white text-xs hover:bg-slate-600"
-                  >
-                    Record Return
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Active Trips</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Truck</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Pickup Site</TableHead>
+                <TableHead>Dispatched</TableHead>
+                <TableHead>Elapsed</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loadingTrips ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-16 text-center text-muted-foreground">Loading…</TableCell>
+                </TableRow>
+              ) : trips.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-16 text-center text-muted-foreground">No active trips</TableCell>
+                </TableRow>
+              ) : trips.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell>{t.truck ? t.truck.plate_number : "—"}</TableCell>
+                  <TableCell>{t.driver ? t.driver.full_name : "—"}</TableCell>
+                  <TableCell>{t.pickup_site ? t.pickup_site.site_name : "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(t.dispatch_time).toLocaleString()}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatElapsed(t.elapsed_seconds)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" onClick={() => openReturn(t)}>
+                      Record Return
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <div className="flex flex-wrap items-end gap-3 mb-3">
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Start date</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className="border border-slate-300 rounded-md px-3 py-1.5 text-sm"
-          />
+      <div className="mb-3 flex flex-wrap items-end gap-3">
+        <div className="flex w-40 flex-col gap-1">
+          <Label htmlFor="start-date" className="text-xs text-muted-foreground">Start date</Label>
+          <Input id="start-date" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">End date</label>
-          <input
-            type="date"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            className="border border-slate-300 rounded-md px-3 py-1.5 text-sm"
-          />
+        <div className="flex w-40 flex-col gap-1">
+          <Label htmlFor="end-date" className="text-xs text-muted-foreground">End date</Label>
+          <Input id="end-date" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
         </div>
-        <button
-          onClick={() => { setStart(todayStr()); setEnd(todayStr()) }}
-          className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 underline"
-        >
+        <Button variant="link" onClick={() => { setStart(todayStr()); setEnd(todayStr()) }}>
           Today
-        </button>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">Daily Factory TBS Total (kg)</h3>
-          <BarChart data={chart.daily_tbs} labelKey="date" valueKey="total_kg" unit=" kg" />
-        </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">Completed Trips by Pickup Site</h3>
-          <BarChart data={chart.trips_by_site} labelKey="site_name" valueKey="count" unit="" />
-        </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Daily Factory TBS Total (kg)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarChart data={chart.daily_tbs} labelKey="date" valueKey="total_kg" unit=" kg" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Completed Trips by Pickup Site</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarChart data={chart.trips_by_site} labelKey="site_name" valueKey="count" unit="" />
+          </CardContent>
+        </Card>
       </div>
 
-      {returnTarget && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setReturnTarget(null)}>
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-1 text-slate-800">Record Return</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              {returnTarget.truck?.plate_number} · {returnTarget.driver?.full_name} · {returnTarget.pickup_site?.site_name}
-            </p>
-            <form onSubmit={handleReturn}>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Pickup Gross (kg)</label>
-                  <input
-                    type="number" step="1" min="1"
-                    value={rPickupGross}
-                    onChange={(e) => setRPickupGross(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Pickup Tare (kg)</label>
-                  <input
-                    type="number" step="1" min="1"
-                    value={rPickupTare}
-                    onChange={(e) => setRPickupTare(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Factory Gross (kg)</label>
-                  <input
-                    type="number" step="1" min="1"
-                    value={rFactoryGross}
-                    onChange={(e) => setRFactoryGross(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Factory Tare (kg)</label>
-                  <input
-                    type="number" step="1" min="1"
-                    value={rFactoryTare}
-                    onChange={(e) => setRFactoryTare(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
-                  />
-                </div>
+      <Dialog open={!!returnTarget} onOpenChange={(o) => !o && setReturnTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Return</DialogTitle>
+            <DialogDescription>
+              {returnTarget?.truck?.plate_number} · {returnTarget?.driver?.full_name} · {returnTarget?.pickup_site?.site_name}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleReturn}>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="r-pickup-gross">Pickup Gross (kg)</Label>
+                <Input id="r-pickup-gross" type="number" step="1" min="1" value={rPickupGross} onChange={(e) => setRPickupGross(e.target.value)} />
               </div>
-
-              <label className="block text-sm font-medium text-slate-600 mb-1">Return Time</label>
-              <input
-                type="datetime-local"
-                value={rReturnTime}
-                onChange={(e) => setRReturnTime(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
-
-              {returnError && <p className="text-red-600 text-sm mb-2">{returnError}</p>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setReturnTarget(null)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">Save</button>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="r-pickup-tare">Pickup Tare (kg)</Label>
+                <Input id="r-pickup-tare" type="number" step="1" min="1" value={rPickupTare} onChange={(e) => setRPickupTare(e.target.value)} />
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="r-factory-gross">Factory Gross (kg)</Label>
+                <Input id="r-factory-gross" type="number" step="1" min="1" value={rFactoryGross} onChange={(e) => setRFactoryGross(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="r-factory-tare">Factory Tare (kg)</Label>
+                <Input id="r-factory-tare" type="number" step="1" min="1" value={rFactoryTare} onChange={(e) => setRFactoryTare(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-1">
+              <Label htmlFor="r-return-time">Return Time</Label>
+              <Input id="r-return-time" type="datetime-local" value={rReturnTime} onChange={(e) => setRReturnTime(e.target.value)} />
+            </div>
+
+            {returnError && (
+              <Alert variant="destructive" className="mt-4">
+                <CircleAlert />
+                <AlertDescription>{returnError}</AlertDescription>
+              </Alert>
+            )}
+            <DialogFooter>
+              <DialogClose render={<Button type="button" variant="outline" />}>
+                Cancel
+              </DialogClose>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

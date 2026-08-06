@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import "./index.css"
 import { AuthProvider } from "./context/AuthContext"
+import { ThemeProvider } from "./context/ThemeContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
@@ -16,6 +17,7 @@ import Users from "./pages/Users"
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -31,6 +33,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="*" element={<Login />} />
         </Routes>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )
