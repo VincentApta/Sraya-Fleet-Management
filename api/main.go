@@ -82,6 +82,9 @@ func main() {
 	trips.Post("/", createTrip(db))
 	trips.Post("/:id/return", returnTrip(db))
 	trips.Put("/:id", updateTrip(db))
+	// History — read-only views over RETURNED trips (list + CSV export).
+	trips.Get("/history", listTripHistory(db))
+	trips.Get("/history/export", exportTripHistory(db))
 
 	// Users — every endpoint is Administrator-only (group-level RequireRole).
 	users := app.Group("/api/users", RequireAuth(), RequireRole(RoleAdministrator))
@@ -90,6 +93,11 @@ func main() {
 	users.Post("/", createUser(db))
 	users.Put("/:id", updateUser(db))
 	users.Put("/:id/reset-password", resetUserPassword(db))
+
+	// Dashboard — read-only operational overview; any authenticated role.
+	dashboard := app.Group("/api/dashboard", RequireAuth())
+	dashboard.Get("/stats", dashboardStats(db))
+	dashboard.Get("/chart-data", dashboardChartData(db))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		sqlDB, err := db.DB()
