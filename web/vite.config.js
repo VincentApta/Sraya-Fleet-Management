@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       // Same-origin /api so the httpOnly auth cookie flows without CORS.
-      "/api": "http://localhost:8080",
+      "/api": process.env.VITE_API_PROXY || "http://api:8080",
     },
   },
 })
