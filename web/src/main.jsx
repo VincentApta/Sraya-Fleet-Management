@@ -10,6 +10,7 @@ import Drivers from "./pages/Drivers"
 import PickupSites from "./pages/PickupSites"
 import Trucks from "./pages/Trucks"
 import Trips from "./pages/Trips"
+import History from "./pages/History"
 import Users from "./pages/Users"
 
 createRoot(document.getElementById("root")).render(
@@ -24,6 +25,7 @@ createRoot(document.getElementById("root")).render(
             <Route path="/pickup-sites" element={<PickupSites />} />
             <Route path="/trucks" element={<Trucks />} />
             <Route path="/trips" element={<Trips />} />
+            <Route path="/history" element={<History />} />
             <Route path="/users" element={<Users />} />
           </Route>
           <Route path="*" element={<Login />} />

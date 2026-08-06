@@ -25,6 +25,7 @@ export default function Layout({ children }) {
               <Link to="/pickup-sites" className="text-slate-600 hover:text-slate-900">Pickup Sites</Link>
               <Link to="/trucks" className="text-slate-600 hover:text-slate-900">Trucks</Link>
               <Link to="/trips" className="text-slate-600 hover:text-slate-900">Trips</Link>
+              <Link to="/history" className="text-slate-600 hover:text-slate-900">History</Link>
               {isAdmin && <Link to="/users" className="text-slate-600 hover:text-slate-900">Users</Link>}
             </nav>
           </div>
