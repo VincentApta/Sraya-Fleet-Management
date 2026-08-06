@@ -1,0 +1,4 @@
+# do not ship host-built artifacts into the build context
+server
+sraya-fleet-api
+*.md
