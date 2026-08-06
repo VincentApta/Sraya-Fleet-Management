@@ -14,16 +14,17 @@ type pickupSiteInput struct {
 }
 
 // siteHasActiveTrip checks whether the pickup site is on a dispatched trip.
-// Returns false until the Trip model exists (issue #6); then it will query trips.
-// ponytail: wire to real Trip table when #6 lands.
 func siteHasActiveTrip(db *gorm.DB, siteID uint) bool {
-	return false
+	var count int64
+	db.Model(&Trip{}).Where("pickup_site_id = ? AND status = ?", siteID, TripStatusDispatched).Count(&count)
+	return count > 0
 }
 
 // siteHasAnyTrip checks whether the pickup site has ever been used in any trip.
-// ponytail: wire to real Trip table when #6 lands.
 func siteHasAnyTrip(db *gorm.DB, siteID uint) bool {
-	return false
+	var count int64
+	db.Model(&Trip{}).Where("pickup_site_id = ?", siteID).Count(&count)
+	return count > 0
 }
 
 func listPickupSites(db *gorm.DB) fiber.Handler {

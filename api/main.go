@@ -26,9 +26,14 @@ func main() {
 	}
 	log.Println("connected to database")
 
-	if err := db.AutoMigrate(&User{}, &Driver{}, &PickupSite{}, &Truck{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Driver{}, &PickupSite{}, &Truck{}, &Trip{}); err != nil {
 		log.Fatalf("auto-migrate failed: %v", err)
 	}
+	// Partial unique indexes: at most one DISPATCHED trip per truck / driver.
+	// They back the application-level checks against concurrent dispatches.
+	// IF NOT EXISTS keeps this idempotent across restarts.
+	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_truck_dispatched ON trips (truck_id) WHERE status = 'Dispatched'")
+	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_trips_driver_dispatched ON trips (driver_id) WHERE status = 'Dispatched'")
 	seedAdmin(db)
 
 	app := fiber.New()
@@ -63,10 +68,26 @@ func main() {
 	// Trucks — all endpoints require auth; write ops are admin-only.
 	trucks := app.Group("/api/trucks", RequireAuth())
 	trucks.Get("/", listTrucks(db))
+	trucks.Get("/available", listAvailableTrucks(db))
 	trucks.Get("/:id", getTruck(db))
 	trucks.Post("/", RequireRole(RoleAdministrator), createTruck(db))
 	trucks.Put("/:id", RequireRole(RoleAdministrator), updateTruck(db))
 	trucks.Delete("/:id", RequireRole(RoleAdministrator), deleteTruck(db))
+
+	// Trips — dispatch is an operational action available to any authenticated
+	// operator; reads are auth-only.
+	trips := app.Group("/api/trips", RequireAuth())
+	trips.Get("/active", listActiveTrips(db))
+	trips.Get("/:id", getTrip(db))
+	trips.Post("/", createTrip(db))
+
+	// Users — every endpoint is Administrator-only (group-level RequireRole).
+	users := app.Group("/api/users", RequireAuth(), RequireRole(RoleAdministrator))
+	users.Get("/", listUsers(db))
+	users.Get("/:id", getUser(db))
+	users.Post("/", createUser(db))
+	users.Put("/:id", updateUser(db))
+	users.Put("/:id/reset-password", resetUserPassword(db))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		sqlDB, err := db.DB()

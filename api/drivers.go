@@ -7,9 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// TripStatus constants — referenced by the active-trip guard on deactivation.
-// ponytail: Trip model arrives in issue #6; until then the guard is a no-op.
-const TripStatusDispatched = "Dispatched"
+// TripStatus constants live in models.go; referenced by the active-trip guard.
 
 type driverInput struct {
 	FullName string `json:"full_name"`
@@ -17,16 +15,17 @@ type driverInput struct {
 }
 
 // hasActiveTrip checks whether the driver is on a dispatched trip.
-// Returns false until the Trip model exists (issue #6); then it will query trips.
-// ponytail: wire to real Trip table when #6 lands.
 func hasActiveTrip(db *gorm.DB, driverID uint) bool {
-	return false
+	var count int64
+	db.Model(&Trip{}).Where("driver_id = ? AND status = ?", driverID, TripStatusDispatched).Count(&count)
+	return count > 0
 }
 
 // hasAnyTrip checks whether the driver has ever been used in any trip.
-// ponytail: wire to real Trip table when #6 lands.
 func hasAnyTrip(db *gorm.DB, driverID uint) bool {
-	return false
+	var count int64
+	db.Model(&Trip{}).Where("driver_id = ?", driverID).Count(&count)
+	return count > 0
 }
 
 func listDrivers(db *gorm.DB) fiber.Handler {

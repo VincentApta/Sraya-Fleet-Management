@@ -28,16 +28,17 @@ type truckInput struct {
 }
 
 // truckHasActiveTrip reports whether the truck is on a dispatched trip.
-// Returns false until the Trip model exists (issue #6); then it will query trips.
-// ponytail: wire to real Trip table when #6 lands.
 func truckHasActiveTrip(db *gorm.DB, truckID uint) bool {
-	return false
+	var count int64
+	db.Model(&Trip{}).Where("truck_id = ? AND status = ?", truckID, TripStatusDispatched).Count(&count)
+	return count > 0
 }
 
 // truckHasAnyTrip reports whether the truck has ever been used in any trip.
-// ponytail: wire to real Trip table when #6 lands.
 func truckHasAnyTrip(db *gorm.DB, truckID uint) bool {
-	return false
+	var count int64
+	db.Model(&Trip{}).Where("truck_id = ?", truckID).Count(&count)
+	return count > 0
 }
 
 // sameDriverPtr reports whether two driver pointers refer to the same driver
