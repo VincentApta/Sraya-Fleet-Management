@@ -1,16 +1,24 @@
-import React from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import React from "react"
+import { createRoot } from "react-dom/client"
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import "./index.css"
+import { AuthProvider } from "./context/AuthContext"
+import ProtectedRoute from "./components/ProtectedRoute"
+import Login from "./pages/Login"
+import Dashboard from "./pages/Dashboard"
 
-function App() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-slate-800">Sraya Fleet Management</h1>
-        <p className="mt-2 text-slate-500">Local dev environment is running.</p>
-      </div>
-    </div>
-  )
-}
-
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Dashboard />} />
+          </Route>
+          <Route path="*" element={<Login />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
+)

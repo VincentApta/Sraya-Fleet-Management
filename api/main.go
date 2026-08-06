@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -25,7 +26,24 @@ func main() {
 	}
 	log.Println("connected to database")
 
+	if err := db.AutoMigrate(&User{}); err != nil {
+		log.Fatalf("auto-migrate failed: %v", err)
+	}
+	seedAdmin(db)
+
 	app := fiber.New()
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     envOr("WEB_ORIGIN", "http://localhost:5173"),
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Content-Type",
+	}))
+
+	auth := app.Group("/api/auth")
+	auth.Post("/login", loginHandler(db))
+	auth.Get("/me", RequireAuth(), meHandler(db))
+	auth.Post("/logout", logoutHandler)
+
 	app.Get("/health", func(c *fiber.Ctx) error {
 		sqlDB, err := db.DB()
 		if err != nil {
