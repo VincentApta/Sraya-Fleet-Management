@@ -26,7 +26,7 @@ func main() {
 	}
 	log.Println("connected to database")
 
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Driver{}); err != nil {
 		log.Fatalf("auto-migrate failed: %v", err)
 	}
 	seedAdmin(db)
@@ -43,6 +43,14 @@ func main() {
 	auth.Post("/login", loginHandler(db))
 	auth.Get("/me", RequireAuth(), meHandler(db))
 	auth.Post("/logout", logoutHandler)
+
+	// Drivers — all endpoints require auth; write ops are admin-only.
+	drivers := app.Group("/api/drivers", RequireAuth())
+	drivers.Get("/", listDrivers(db))
+	drivers.Get("/:id", getDriver(db))
+	drivers.Post("/", RequireRole(RoleAdministrator), createDriver(db))
+	drivers.Put("/:id", RequireRole(RoleAdministrator), updateDriver(db))
+	drivers.Delete("/:id", RequireRole(RoleAdministrator), deleteDriver(db))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		sqlDB, err := db.DB()

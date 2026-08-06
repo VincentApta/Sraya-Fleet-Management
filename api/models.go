@@ -19,3 +19,12 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
+
+// Driver represents a fleet driver.
+type Driver struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	FullName  string    `gorm:"not null" json:"full_name"`
+	IsActive  bool      `gorm:"not null;default:true" json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}

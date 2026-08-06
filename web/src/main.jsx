@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
+import Drivers from "./pages/Drivers"
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -15,6 +16,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/drivers" element={<Drivers />} />
           </Route>
           <Route path="*" element={<Login />} />
         </Routes>
