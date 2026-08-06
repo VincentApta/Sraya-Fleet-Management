@@ -1,5 +1,37 @@
 import { useEffect, useState } from "react"
+import { ChevronDownIcon, PlusIcon } from "lucide-react"
 import { api } from "../api"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Field, FieldGroup, FieldLabel, FieldDescription, FieldError } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 // datetime-local value for "now" in the user's local timezone.
 function localNow() {
@@ -19,17 +51,17 @@ function formatElapsed(seconds) {
   return `${sec}s`
 }
 
-// Tailwind classes for the load_status badge: green at capacity, blue under, red over.
-function loadStatusClass(status) {
+// Badge variant for load_status: success at capacity, info under, destructive over.
+function loadStatusVariant(status) {
   switch (status) {
     case "At capacity":
-      return "bg-green-50 text-green-700"
+      return "success"
     case "Underweight":
-      return "bg-blue-50 text-blue-700"
+      return "info"
     case "Overweight":
-      return "bg-red-50 text-red-700"
+      return "destructive"
     default:
-      return "bg-slate-50 text-slate-600"
+      return "secondary"
   }
 }
 
@@ -113,6 +145,19 @@ export default function Trips() {
     if (truck?.usual_driver) setFormDriver(String(truck.usual_driver.id))
   }
 
+  const truckItems = [
+    { value: null, label: "— Select truck —" },
+    ...availableTrucks.map((t) => ({ value: String(t.id), label: `${t.plate_number} (${t.display_name})` })),
+  ]
+  const driverItems = [
+    { value: null, label: "— Select driver —" },
+    ...drivers.map((d) => ({ value: String(d.id), label: d.full_name })),
+  ]
+  const siteItems = [
+    { value: null, label: "— Select site —" },
+    ...sites.map((s) => ({ value: String(s.id), label: s.site_name })),
+  ]
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!formTruck) { setFormError("Truck is required"); return }
@@ -171,266 +216,333 @@ export default function Trips() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-slate-800">Active Trips</h1>
-        <button onClick={openForm} className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">
-          + Dispatch Trip
-        </button>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold">Active Trips</h1>
+        <Button onClick={openForm}>
+          <PlusIcon data-icon="inline-start" />
+          Dispatch Trip
+        </Button>
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">{error}</div>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Truck</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Driver</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Pickup Site</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Dispatched</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Elapsed</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Trip Money (IDR)</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Truck</TableHead>
+              <TableHead>Driver</TableHead>
+              <TableHead>Pickup Site</TableHead>
+              <TableHead>Dispatched</TableHead>
+              <TableHead>Elapsed</TableHead>
+              <TableHead className="text-right">Trip Money (IDR)</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
             ) : trips.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No active trips</td></tr>
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  No active trips
+                </TableCell>
+              </TableRow>
             ) : trips.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-800">{t.truck ? t.truck.plate_number : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.driver ? t.driver.full_name : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">{t.pickup_site ? t.pickup_site.site_name : "—"}</td>
-                <td className="px-4 py-3 text-slate-800">
-                  {new Date(t.dispatch_time).toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-slate-600">{formatElapsed(t.elapsed_seconds)}</td>
-                <td className="px-4 py-3 text-right text-slate-800">
+              <TableRow key={t.id}>
+                <TableCell>{t.truck ? t.truck.plate_number : "—"}</TableCell>
+                <TableCell>{t.driver ? t.driver.full_name : "—"}</TableCell>
+                <TableCell>{t.pickup_site ? t.pickup_site.site_name : "—"}</TableCell>
+                <TableCell>{new Date(t.dispatch_time).toLocaleString()}</TableCell>
+                <TableCell className="text-muted-foreground">{formatElapsed(t.elapsed_seconds)}</TableCell>
+                <TableCell className="text-right">
                   {Number(t.trip_money_idr).toLocaleString("id-ID")}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => openReturn(t)}
-                    className="px-3 py-1 rounded-md bg-slate-700 text-white text-xs hover:bg-slate-600"
-                  >
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" onClick={() => openReturn(t)}>
                     Record Return
-                  </button>
-                </td>
-              </tr>
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Returned trips — collapsible section below the active list. */}
-      <div className="mt-8">
-        <button
+      <div className="mt-8 flex flex-col gap-3">
+        <Button
+          variant="ghost"
           onClick={() => setShowReturned((s) => !s)}
-          className="text-sm font-semibold text-slate-700 hover:text-slate-900"
+          className="w-fit font-medium"
         >
-          {showReturned ? "▾" : "▸"} Returned Trips ({returnedTrips.length})
-        </button>
+          <ChevronDownIcon
+            data-icon="inline-start"
+            className={cn("transition-transform", !showReturned && "-rotate-90")}
+          />
+          Returned Trips ({returnedTrips.length})
+        </Button>
 
         {showReturned && (
-          <div className="mt-3 bg-white rounded-lg border border-slate-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Truck</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Driver</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Pickup Site</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Dispatched</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Returned</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Pickup Net (kg)</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Factory Net (kg)</th>
-                  <th className="text-right px-4 py-3 font-medium text-slate-600">Diff (kg)</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-600">Load Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+          <div className="overflow-hidden rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Truck</TableHead>
+                  <TableHead>Driver</TableHead>
+                  <TableHead>Pickup Site</TableHead>
+                  <TableHead>Dispatched</TableHead>
+                  <TableHead>Returned</TableHead>
+                  <TableHead className="text-right">Pickup Net (kg)</TableHead>
+                  <TableHead className="text-right">Factory Net (kg)</TableHead>
+                  <TableHead className="text-right">Diff (kg)</TableHead>
+                  <TableHead>Load Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {returnedTrips.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">No returned trips</td></tr>
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+                      No returned trips
+                    </TableCell>
+                  </TableRow>
                 ) : returnedTrips.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-800">{t.truck ? t.truck.plate_number : "—"}</td>
-                    <td className="px-4 py-3 text-slate-800">{t.driver ? t.driver.full_name : "—"}</td>
-                    <td className="px-4 py-3 text-slate-800">{t.pickup_site ? t.pickup_site.site_name : "—"}</td>
-                    <td className="px-4 py-3 text-slate-600">{new Date(t.dispatch_time).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-slate-600">
+                  <TableRow key={t.id}>
+                    <TableCell>{t.truck ? t.truck.plate_number : "—"}</TableCell>
+                    <TableCell>{t.driver ? t.driver.full_name : "—"}</TableCell>
+                    <TableCell>{t.pickup_site ? t.pickup_site.site_name : "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{new Date(t.dispatch_time).toLocaleString()}</TableCell>
+                    <TableCell className="text-muted-foreground">
                       {t.return_time ? new Date(t.return_time).toLocaleString() : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-800">{t.pickup_net_kg ?? "—"}</td>
-                    <td className="px-4 py-3 text-right text-slate-800">{t.factory_net_kg ?? "—"}</td>
-                    <td className="px-4 py-3 text-right text-slate-800">{t.weight_difference_kg ?? "—"}</td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="text-right">{t.pickup_net_kg ?? "—"}</TableCell>
+                    <TableCell className="text-right">{t.factory_net_kg ?? "—"}</TableCell>
+                    <TableCell className="text-right">{t.weight_difference_kg ?? "—"}</TableCell>
+                    <TableCell>
                       {t.load_status ? (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${loadStatusClass(t.load_status)}`}>
+                        <Badge variant={loadStatusVariant(t.load_status)}>
                           {t.load_status}
-                        </span>
+                        </Badge>
                       ) : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4 text-slate-800">Dispatch Trip</h2>
-            <form onSubmit={handleSubmit}>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Truck</label>
-              <select
-                value={formTruck}
-                onChange={(e) => selectTruck(e.target.value)}
-                autoFocus
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-2"
-              >
-                <option value="">— Select truck —</option>
-                {availableTrucks.map((t) => (
-                  <option key={t.id} value={t.id}>{t.plate_number} ({t.display_name})</option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-400 mb-4">Only active trucks without a current trip are listed.</p>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dispatch Trip</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="trip-truck">Truck</FieldLabel>
+                <Select
+                  items={truckItems}
+                  value={formTruck || null}
+                  onValueChange={(v) => selectTruck(v ?? "")}
+                >
+                  <SelectTrigger id="trip-truck" className="w-full">
+                    <SelectValue placeholder="— Select truck —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {truckItems.map((it) => (
+                        <SelectItem key={it.value ?? "truck"} value={it.value}>
+                          {it.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Only active trucks without a current trip are listed.
+                </FieldDescription>
+              </Field>
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Driver</label>
-              <select
-                value={formDriver}
-                onChange={(e) => setFormDriver(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-2"
-              >
-                <option value="">— Select driver —</option>
-                {drivers.map((d) => (
-                  <option key={d.id} value={d.id}>{d.full_name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-400 mb-4">Prefilled with the truck's usual driver when selected.</p>
+              <Field>
+                <FieldLabel htmlFor="trip-driver">Driver</FieldLabel>
+                <Select
+                  items={driverItems}
+                  value={formDriver || null}
+                  onValueChange={(v) => setFormDriver(v ?? "")}
+                >
+                  <SelectTrigger id="trip-driver" className="w-full">
+                    <SelectValue placeholder="— Select driver —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {driverItems.map((it) => (
+                        <SelectItem key={it.value ?? "driver"} value={it.value}>
+                          {it.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Prefilled with the truck's usual driver when selected.
+                </FieldDescription>
+              </Field>
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Pickup Site</label>
-              <select
-                value={formSite}
-                onChange={(e) => setFormSite(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              >
-                <option value="">— Select site —</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>{s.site_name}</option>
-                ))}
-              </select>
+              <Field>
+                <FieldLabel htmlFor="trip-site">Pickup Site</FieldLabel>
+                <Select
+                  items={siteItems}
+                  value={formSite || null}
+                  onValueChange={(v) => setFormSite(v ?? "")}
+                >
+                  <SelectTrigger id="trip-site" className="w-full">
+                    <SelectValue placeholder="— Select site —" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {siteItems.map((it) => (
+                        <SelectItem key={it.value ?? "site"} value={it.value}>
+                          {it.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Trip Money (IDR)</label>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={formMoney}
-                onChange={(e) => setFormMoney(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
+              <Field>
+                <FieldLabel htmlFor="trip-money">Trip Money (IDR)</FieldLabel>
+                <Input
+                  id="trip-money"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formMoney}
+                  onChange={(e) => setFormMoney(e.target.value)}
+                />
+              </Field>
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Dispatch Time</label>
-              <input
-                type="datetime-local"
-                value={formDispatchTime}
-                onChange={(e) => setFormDispatchTime(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
+              <Field>
+                <FieldLabel htmlFor="trip-dispatch-time">Dispatch Time</FieldLabel>
+                <Input
+                  id="trip-dispatch-time"
+                  type="datetime-local"
+                  value={formDispatchTime}
+                  onChange={(e) => setFormDispatchTime(e.target.value)}
+                />
+              </Field>
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Notes</label>
-              <textarea
-                value={formNotes}
-                onChange={(e) => setFormNotes(e.target.value)}
-                rows={2}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
+              <Field>
+                <FieldLabel htmlFor="trip-notes">Notes</FieldLabel>
+                <Textarea
+                  id="trip-notes"
+                  value={formNotes}
+                  onChange={(e) => setFormNotes(e.target.value)}
+                  rows={2}
+                />
+              </Field>
 
-              {formError && <p className="text-red-600 text-sm mb-2">{formError}</p>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">Dispatch</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              {formError && <FieldError>{formError}</FieldError>}
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Dispatch</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {returnTarget && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setReturnTarget(null)}>
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-1 text-slate-800">Record Return</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              {returnTarget.truck?.plate_number} · {returnTarget.driver?.full_name} · {returnTarget.pickup_site?.site_name}
-            </p>
-            <form onSubmit={handleReturn}>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Pickup Gross (kg)</label>
-                  <input
+      <Dialog open={!!returnTarget} onOpenChange={(o) => !o && setReturnTarget(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record Return</DialogTitle>
+            <DialogDescription>
+              {returnTarget?.truck?.plate_number} · {returnTarget?.driver?.full_name} ·{" "}
+              {returnTarget?.pickup_site?.site_name}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleReturn}>
+            <FieldGroup>
+              <div className="grid grid-cols-2 gap-3">
+                <Field>
+                  <FieldLabel htmlFor="r-pickup-gross">Pickup Gross (kg)</FieldLabel>
+                  <Input
+                    id="r-pickup-gross"
                     type="number"
                     step="1"
                     min="1"
                     value={rPickupGross}
                     onChange={(e) => setRPickupGross(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Pickup Tare (kg)</label>
-                  <input
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="r-pickup-tare">Pickup Tare (kg)</FieldLabel>
+                  <Input
+                    id="r-pickup-tare"
                     type="number"
                     step="1"
                     min="1"
                     value={rPickupTare}
                     onChange={(e) => setRPickupTare(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Factory Gross (kg)</label>
-                  <input
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="r-factory-gross">Factory Gross (kg)</FieldLabel>
+                  <Input
+                    id="r-factory-gross"
                     type="number"
                     step="1"
                     min="1"
                     value={rFactoryGross}
                     onChange={(e) => setRFactoryGross(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Factory Tare (kg)</label>
-                  <input
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="r-factory-tare">Factory Tare (kg)</FieldLabel>
+                  <Input
+                    id="r-factory-tare"
                     type="number"
                     step="1"
                     min="1"
                     value={rFactoryTare}
                     onChange={(e) => setRFactoryTare(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"
                   />
-                </div>
+                </Field>
               </div>
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Return Time</label>
-              <input
-                type="datetime-local"
-                value={rReturnTime}
-                onChange={(e) => setRReturnTime(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              />
+              <Field>
+                <FieldLabel htmlFor="r-return-time">Return Time</FieldLabel>
+                <Input
+                  id="r-return-time"
+                  type="datetime-local"
+                  value={rReturnTime}
+                  onChange={(e) => setRReturnTime(e.target.value)}
+                />
+              </Field>
 
-              {returnError && <p className="text-red-600 text-sm mb-2">{returnError}</p>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setReturnTarget(null)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              {returnError && <FieldError>{returnError}</FieldError>}
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setReturnTarget(null)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

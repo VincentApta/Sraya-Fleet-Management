@@ -1,9 +1,45 @@
 import { useEffect, useState } from "react"
 import { Navigate } from "react-router-dom"
+import { PlusIcon } from "lucide-react"
 import { api } from "../api"
 import { useAuth } from "../context/AuthContext"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Field, FieldGroup, FieldLabel, FieldError } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 const ROLES = ["Administrator", "Fleet Operator"]
+const ROLE_ITEMS = ROLES.map((r) => ({ value: r, label: r }))
+const STATUS_ITEMS = [
+  { value: null, label: "All" },
+  { value: "true", label: "Active" },
+  { value: "false", label: "Inactive" },
+]
 
 // Administrator-only account management. Non-admins are bounced to the dashboard
 // (the API enforces the same with 403 on every endpoint); the nav link is also
@@ -23,6 +59,11 @@ export default function Users() {
   const [formRole, setFormRole] = useState("Fleet Operator")
   const [formActive, setFormActive] = useState(true)
   const [error, setError] = useState("")
+
+  // Reset-password dialog state; resetUser is the target (null = closed).
+  const [resetUser, setResetUser] = useState(null)
+  const [resetPassword, setResetPassword] = useState("")
+  const [resetError, setResetError] = useState("")
 
   useEffect(() => {
     fetchUsers()
@@ -91,11 +132,18 @@ export default function Users() {
     fetchUsers()
   }
 
-  async function handleResetPassword(u) {
-    const password = window.prompt(`Enter a new password for "${u.username}"`)
-    if (!password) return
-    const { ok, data } = await api.put(`/api/users/${u.id}/reset-password`, { password })
-    if (!ok) { setError(data.error || "Reset failed"); return }
+  function openReset(u) {
+    setResetUser(u)
+    setResetPassword("")
+    setResetError("")
+  }
+
+  async function submitReset(e) {
+    e.preventDefault()
+    if (!resetPassword) { setResetError("Password is required"); return }
+    const { ok, data } = await api.put(`/api/users/${resetUser.id}/reset-password`, { password: resetPassword })
+    if (!ok) { setResetError(data.error || "Reset failed"); return }
+    setResetUser(null)
     fetchUsers()
   }
 
@@ -103,120 +151,220 @@ export default function Users() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-slate-800">Users</h1>
-        <button onClick={openCreate} className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">
-          + Add User
-        </button>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold">Users</h1>
+        <Button onClick={openCreate}>
+          <PlusIcon data-icon="inline-start" />
+          Add User
+        </Button>
       </div>
 
-      {error && <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">{error}</div>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="mb-4 flex items-center gap-3">
-        <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }} className="border border-slate-300 rounded-md px-3 py-1.5 text-sm">
-          <option value="">All</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
+      <div className="mb-4 flex items-center gap-2">
+        <Select
+          items={STATUS_ITEMS}
+          value={filter || null}
+          onValueChange={(v) => { setFilter(v ?? ""); setPage(1) }}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {STATUS_ITEMS.map((it) => (
+                <SelectItem key={it.value ?? "all"} value={it.value}>
+                  {it.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Username</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Role</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Status</th>
-              <th className="text-right px-4 py-3 font-medium text-slate-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  Loading…
+                </TableCell>
+              </TableRow>
             ) : users.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No users found</td></tr>
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  No users found
+                </TableCell>
+              </TableRow>
             ) : users.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-800">{u.username}</td>
-                <td className="px-4 py-3 text-slate-600">{u.role}</td>
-                <td className="px-4 py-3">
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${u.is_active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+              <TableRow key={u.id}>
+                <TableCell>{u.username}</TableCell>
+                <TableCell className="text-muted-foreground">{u.role}</TableCell>
+                <TableCell>
+                  <Badge variant={u.is_active ? "default" : "secondary"}>
                     {u.is_active ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openEdit(u)} className="text-slate-600 hover:text-slate-900 text-sm">Edit</button>
-                  <button onClick={() => handleToggleActive(u)} className="text-slate-600 hover:text-slate-900 text-sm">
-                    {u.is_active ? "Deactivate" : "Activate"}
-                  </button>
-                  <button onClick={() => handleResetPassword(u)} className="text-slate-600 hover:text-slate-900 text-sm">Reset Password</button>
-                </td>
-              </tr>
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(u)}>
+                      Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleToggleActive(u)}>
+                      {u.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openReset(u)}>
+                      Reset Password
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center gap-2 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 rounded-md border border-slate-300 disabled:opacity-40 hover:bg-slate-50">Prev</button>
-          <span className="text-slate-600">Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 rounded-md border border-slate-300 disabled:opacity-40 hover:bg-slate-50">Next</button>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+            Prev
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </Button>
         </div>
       )}
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4 text-slate-800">{editing ? "Edit User" : "Add User"}</h2>
-            <form onSubmit={handleSubmit}>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Username</label>
-              <input
-                type="text"
-                value={formUsername}
-                onChange={(e) => setFormUsername(e.target.value)}
-                autoFocus
-                disabled={!!editing}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4 disabled:bg-slate-100 disabled:text-slate-400"
-              />
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit User" : "Add User"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="user-username">Username</FieldLabel>
+                <Input
+                  id="user-username"
+                  type="text"
+                  value={formUsername}
+                  onChange={(e) => setFormUsername(e.target.value)}
+                  autoFocus
+                  disabled={!!editing}
+                />
+              </Field>
 
               {!editing && (
-                <>
-                  <label className="block text-sm font-medium text-slate-600 mb-1">Password</label>
-                  <input
+                <Field>
+                  <FieldLabel htmlFor="user-password">Password</FieldLabel>
+                  <Input
+                    id="user-password"
                     type="password"
                     value={formPassword}
                     onChange={(e) => setFormPassword(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
                   />
-                </>
+                </Field>
               )}
 
-              <label className="block text-sm font-medium text-slate-600 mb-1">Role</label>
-              <select
-                value={formRole}
-                onChange={(e) => setFormRole(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"
-              >
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
+              <Field>
+                <FieldLabel htmlFor="user-role">Role</FieldLabel>
+                <Select
+                  items={ROLE_ITEMS}
+                  value={formRole}
+                  onValueChange={setFormRole}
+                >
+                  <SelectTrigger id="user-role" className="w-full">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {ROLE_ITEMS.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
 
               {editing && (
-                <label className="flex items-center gap-2 text-sm text-slate-600 mb-4">
-                  <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} />
-                  Active
-                </label>
+                <Field orientation="horizontal">
+                  <input
+                    id="user-active"
+                    type="checkbox"
+                    checked={formActive}
+                    onChange={(e) => setFormActive(e.target.checked)}
+                    className="size-4"
+                  />
+                  <FieldLabel htmlFor="user-active">Active</FieldLabel>
+                </Field>
               )}
 
-              {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-md bg-slate-800 text-white text-sm hover:bg-slate-700">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              {error && <FieldError>{error}</FieldError>}
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resetUser} onOpenChange={(o) => !o && setResetUser(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter a new password for {resetUser?.username}.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submitReset}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="reset-password">New Password</FieldLabel>
+                <Input
+                  id="reset-password"
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  autoFocus
+                />
+                {resetError && <FieldError>{resetError}</FieldError>}
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setResetUser(null)}>
+                Cancel
+              </Button>
+              <Button type="submit">Reset</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
