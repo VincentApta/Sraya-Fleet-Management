@@ -182,7 +182,6 @@ export default function Trucks() {
 
       <div className="mb-4 flex items-center gap-2">
         <Select
-          items={STATUS_ITEMS}
           value={filter || null}
           onValueChange={(v) => { setFilter(v ?? ""); setPage(1) }}
         >
@@ -322,7 +321,6 @@ export default function Trucks() {
               <Field>
                 <FieldLabel htmlFor="truck-driver">Usual Driver</FieldLabel>
                 <Select
-                  items={driverItems}
                   value={formDriver || null}
                   onValueChange={(v) => setFormDriver(v ?? "")}
                 >

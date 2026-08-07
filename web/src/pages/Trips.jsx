@@ -351,7 +351,6 @@ export default function Trips() {
               <Field>
                 <FieldLabel htmlFor="trip-truck">Truck</FieldLabel>
                 <Select
-                  items={truckItems}
                   value={formTruck || null}
                   onValueChange={(v) => selectTruck(v ?? "")}
                 >
@@ -376,7 +375,6 @@ export default function Trips() {
               <Field>
                 <FieldLabel htmlFor="trip-driver">Driver</FieldLabel>
                 <Select
-                  items={driverItems}
                   value={formDriver || null}
                   onValueChange={(v) => setFormDriver(v ?? "")}
                 >
@@ -401,7 +399,6 @@ export default function Trips() {
               <Field>
                 <FieldLabel htmlFor="trip-site">Pickup Site</FieldLabel>
                 <Select
-                  items={siteItems}
                   value={formSite || null}
                   onValueChange={(v) => setFormSite(v ?? "")}
                 >
