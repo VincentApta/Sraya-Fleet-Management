@@ -124,27 +124,24 @@ function AppSidebar({ me, onLogout }) {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <SidebarMenuButton
-                    size="lg"
-                    className="aria-expanded:bg-sidebar-accent"
-                  >
-                    <Avatar>
-                      <AvatarFallback>
-                        {(me?.username ?? "?").slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{me?.username}</span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {me?.role}
-                      </span>
-                    </div>
-                    <ChevronsUpDown className="ml-auto" />
-                  </SidebarMenuButton>
-                }
-              />
+              <SidebarMenuButton
+                size="lg"
+                className="aria-expanded:bg-sidebar-accent"
+                render={<DropdownMenuTrigger />}
+              >
+                <Avatar>
+                  <AvatarFallback>
+                    {(me?.username ?? "?").slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{me?.username}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {me?.role}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto" />
+              </SidebarMenuButton>
               <DropdownMenuContent
                 className="w-(--anchor-width)"
                 side="top"
