@@ -43,7 +43,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const NAV = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Trips", url: "/trips", icon: Route },
   { title: "Drivers", url: "/drivers", icon: IdCard },
   { title: "Pickup Sites", url: "/pickup-sites", icon: MapPin },
@@ -52,7 +52,6 @@ const NAV = [
 ]
 
 function isActivePath(pathname, url) {
-  if (url === "/") return pathname === "/"
   return pathname === url || pathname.startsWith(url + "/")
 }
 
