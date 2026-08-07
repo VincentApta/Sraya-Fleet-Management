@@ -211,6 +211,24 @@ func listActiveTrips(db *gorm.DB) fiber.Handler {
 	}
 }
 
+// listReturnedTrips lists the most recent RETURNED trips with associations
+// preloaded and the read-time weight calcs. Capped at 50 rows.
+func listReturnedTrips(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var trips []Trip
+		if err := db.Preload("Truck").Preload("Driver").Preload("PickupSite").
+			Where("status = ?", TripStatusReturned).
+			Order("return_time DESC").Limit(50).Find(&trips).Error; err != nil {
+			return fiberErr(c, fiber.StatusInternalServerError, "query failed")
+		}
+		views := make([]tripResponse, len(trips))
+		for i, t := range trips {
+			views[i] = tripWithCalcs(t)
+		}
+		return c.JSON(fiber.Map{"data": views})
+	}
+}
+
 func getTrip(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		id := c.Params("id")
