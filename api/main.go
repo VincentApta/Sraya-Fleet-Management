@@ -78,6 +78,7 @@ func main() {
 	// operator; reads are auth-only.
 	trips := app.Group("/api/trips", RequireAuth())
 	trips.Get("/active", listActiveTrips(db))
+	trips.Get("/returned", listReturnedTrips(db))
 	// History — read-only views over RETURNED trips (list + CSV export).
 	// Registered before /:id: Fiber matches parametric routes in order, so a
 	// static path like "/history" would otherwise be captured by /:id.
