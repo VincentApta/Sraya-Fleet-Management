@@ -10,7 +10,7 @@ export default function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500">
+      <div className="text-muted-foreground min-h-screen flex items-center justify-center">
         Loading…
       </div>
     )
