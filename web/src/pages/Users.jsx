@@ -167,7 +167,6 @@ export default function Users() {
 
       <div className="mb-4 flex items-center gap-2">
         <Select
-          items={STATUS_ITEMS}
           value={filter || null}
           onValueChange={(v) => { setFilter(v ?? ""); setPage(1) }}
         >
@@ -290,7 +289,6 @@ export default function Users() {
               <Field>
                 <FieldLabel htmlFor="user-role">Role</FieldLabel>
                 <Select
-                  items={ROLE_ITEMS}
                   value={formRole}
                   onValueChange={setFormRole}
                 >
