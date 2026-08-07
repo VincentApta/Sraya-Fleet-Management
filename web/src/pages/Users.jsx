@@ -297,9 +297,9 @@ export default function Users() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {ROLE_ITEMS.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {r}
+                      {ROLE_ITEMS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
                         </SelectItem>
                       ))}
                     </SelectGroup>
